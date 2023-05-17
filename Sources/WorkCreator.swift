@@ -8,8 +8,8 @@ func createWork(_ pool: WorkerPool) -> Task<Void, Never> {
 
 private func listenForWork(_ pool: WorkerPool) async {
     while !Task.isCancelled {
-        guard let line = readLine() else { continue }
-        if line == "exit" {
+        guard let line = readLine(strippingNewline: true) else { continue }
+        if line.lowercased() == "exit" {
             pool.actorSystem.log.info("Shutting down")
             do {
                 try await pool.shutdown()

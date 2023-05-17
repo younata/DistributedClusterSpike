@@ -1,7 +1,17 @@
 import Foundation
 
-struct Job: Codable, Equatable, Sendable {
+struct Job: Codable, Equatable, Sendable, CustomStringConvertible {
+    let id: UUID
     let script: String
+
+    init(script: String) {
+        self.id = UUID()
+        self.script = script
+    }
+
+    var description: String {
+        "\(id.uuidString): \"\"\"\(script)\"\"\""
+    }
 }
 
 public struct TaskOutput: Codable, Equatable, Sendable {

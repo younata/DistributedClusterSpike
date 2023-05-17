@@ -4,6 +4,7 @@ protocol Executor: Sendable {
     func execute(task: Job) async throws -> TaskOutput
 }
 
+// ⚠️ This is not how you should allow arbitrary code to execute on worker systems. This works, yes, but is such a bad idea.
 struct FolderizationExecutor: Executor {
     let workDirectory: Path
     let processRunner: ProcessRunner

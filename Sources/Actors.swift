@@ -31,6 +31,11 @@ distributed actor WorkerPool: LifecycleWatch {
             actorSystem.log.error("No workers to submit job to. Workers: \(workers)")
             throw WorkerError.noWorkersAvailable
         }
+        let submitDate = Date()
+        defer {
+            let receiveDate = Date()
+            actorSystem.log.info("Job \(item) took \(receiveDate.timeIntervalSince(submitDate)) seconds to hear back.")
+        }
         return try await worker.work(on: item)
     }
 
@@ -42,13 +47,13 @@ distributed actor WorkerPool: LifecycleWatch {
                 actorSystem.log.error("Error asking worker to exit: \(error)")
             }
         }
+        try actorSystem.shutdown()
     }
 
     func terminated(actor id: ActorID) async {
         actorSystem.log.info("Removing terminated actor \(id)")
         guard let member = workers.first(where: { $0.id == id }) else { return }
         workers.remove(member)
-//        workers.remove(id: id)
     }
 }
 
@@ -65,7 +70,7 @@ distributed actor Worker {
     init(actorSystem: ActorSystem, executor: Executor) async {
         self.actorSystem = actorSystem
         self.executor = executor
-        self.receptionID = UUID().uuidString
+        self.receptionID = "*" // any/"All of this type", see  https://github.com/apple/swift-distributed-actors/issues/1084
         await actorSystem.receptionist.checkIn(self)
     }
 
@@ -78,7 +83,13 @@ distributed actor Worker {
     }
 
     distributed func work(on item: Job) async throws -> TaskOutput {
-        try await executor.execute(task: item)
+        let startDate = Date()
+        actorSystem.log.info("Executing job \(item)")
+        defer {
+            let endDate = Date()
+            actorSystem.log.info("Finished executing job \(item). Took \(endDate.timeIntervalSince(startDate)) seconds.")
+        }
+        return try await executor.execute(task: item)
     }
 }
 
