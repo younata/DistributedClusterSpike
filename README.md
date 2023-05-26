@@ -12,12 +12,13 @@ This attempts to answer the following:
 - [x] Joining Workers to a pool
 - [x] Dispatching commands to workers
 - [x] Handling workers/other clusters withdrawing/terminating.
-  - [ ] Handle the WorkerPool terminating.
+  - [ ] Handle the WorkerPool terminating (it should automatically reconnect once the WorkerPool is back online)
 - [ ] Queueing work.
 - [ ] Streaming work progress.
 - [x] Securing this cluster (i.e. TLS)
 - [ ] Creating clusters where workers are behind NATs (i.e. workers can directly reach the worker pool, but not the other way around). Will this Just Work?
-- [ ] Handling when the worker is initialized before the manager cluster.
+- [x] Handling when the worker is initialized before the WorkerPool cluster.
+  - This just works out of the box with no extra work required.
 - [ ] What other kinds of protocols are available? What are the trade-offs of one protocol vs. another?
 - [ ] Testing.
 - [ ] Observability.
