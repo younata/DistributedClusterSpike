@@ -15,7 +15,7 @@ This attempts to answer the following:
   - [ ] Handle the WorkerPool terminating.
 - [ ] Queueing work.
 - [ ] Streaming work progress.
-- [ ] Securing this cluster (i.e. TLS)
+- [x] Securing this cluster (i.e. TLS)
 - [ ] Creating clusters where workers are behind NATs (i.e. workers can directly reach the worker pool, but not the other way around). Will this Just Work?
 - [ ] Handling when the worker is initialized before the manager cluster.
 - [ ] What other kinds of protocols are available? What are the trade-offs of one protocol vs. another?
@@ -81,6 +81,28 @@ Related to handling when the workers disappear (and preventing logspam...) is ha
 Similar to handling workers dropping out, when the WorkerPool drops, then the INFO level of logging will get spammed with "dead letter was not delivered" errors". Which are solved by setting `onDownAction` of `ClusterSystemSettings` to `.gracefulShutdown(delay:)` as described earlier.
 
 However, the worker will still not try to reconnect to the workerpool. As of this writing, I'm unsure why not.
+
+### Securing the Cluster
+
+Setting up security was rather straightforward, if a little arcane
+
+DistributedCluster has [some documentation](https://swiftpackageindex.com/apple/swift-distributed-actors/main/documentation/distributedcluster/security) on how to set up TLS. The short version is you configure the tls property of the cluster config. That property is a `TLSConfiguration`, which comes from [NIOSSL](https://swiftpackageindex.com/apple/swift-nio-ssl/main/documentation/niossl). Each cluster will have a server configuration, which is created using `TLSConfiguration.makeServerConfiguration`, with `trustRoots` being a list of the other certificates you wish to connect to. That's really all you need to do.
+
+For testing reasons, I have the security set up to not verify hostnames. For most purposes, you will want to verify hostnames (setting `certificateVerification` to `.fullVerification`, but it's simpler here not to. You should never set `certificateVerification` to `.none`, as entirely disabled certificate checking.
+
+I set up a simple `generate-tls-certificates` subcommand which shells out to openssl to create self-signed certificates for workers and the workerpool. This part would have been much simpler as a shell script. You can pass in the number of workers (default 1), and the hostname (no default) for the certificates. This subcommand assumes that all workers will be running on the same machine.
+
+So, for playing around with this, it'll be easiest to run `generate-tls-certificates`, and then pass those keys/certs to the appropriate commands. Here's what I use:
+
+```sh
+# manager
+swift run DistributedClusterSpike manager --security-pool-certificate host-cert.pem --security-pool-key host-key.pem --security-worker-certificates worker-0-cert.pem
+```
+
+```sh
+# worker
+swift run DistributedClusterSpike worker --security-pool-certificate host-cert.pem --security-worker-certificate worker-0-cert.pem --security-worker-key worker-0-key.pem
+```
 
 ### Logging
 
